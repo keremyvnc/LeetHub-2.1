@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "name": "LeetHub v2.1",
   "description": "Automatically integrate your Leetcode & GeeksforGeeks submissions to GitHub",
-  "homepage_url": "https://github.com/arunbhardwaj/LeetHub-2.0",
+  "homepage_url": "https://github.com/keremyvnc/LeetHub-2.1",
   "version": "__LH_VERSION__",
-  "author": "Arun Bhardwaj",
+  "author": "Anil Kerem Yuvanc",
   "action": {
     "default_icon": "assets/thumbnail.png",
     "default_popup": "popup.html",

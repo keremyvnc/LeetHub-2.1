@@ -10,11 +10,15 @@ import {
   LeetHubError,
   mergeStats,
 } from './util.js';
-import { appendProblemToReadme, sortTopicsInReadme } from './readmeTopics.js';
+import {
+  appendProblemToReadme,
+  sortTopicsInReadme,
+  updateStatsInReadme,
+} from './readmeTopics.js';
 
 /* Commit messages */
 const readmeMsg = 'Create README - LeetHub';
-const updateReadmeMsg = 'Update README - Topic Tags';
+const updateReadmeMsg = 'Update README - Topic Tags & Stats';
 const updateStatsMsg = 'Updated stats';
 const discussionMsg = 'Prepend discussion post - LeetHub';
 const createNotesMsg = 'Attach NOTES - LeetHub';
@@ -369,10 +373,45 @@ function createRepoReadme() {
   return uploadGitWith409Retry(content, readmeFilename, '', readmeMsg);
 }
 
-async function updateReadmeTopicTagsWithProblem(topicTags, problemName) {
+/**
+ * Returns the stats counters as they will look once the current submission is counted.
+ * Stats are incremented after the README upload, so without this the README would lag one problem behind.
+ * @param {Object} stats
+ * @param {string} difficulty - One of DIFFICULTY values
+ * @param {boolean} alreadyCompleted - Whether this problem was already counted in stats
+ */
+function projectStats(stats, difficulty, alreadyCompleted) {
+  const projected = {
+    solved: stats?.solved ?? 0,
+    easy: stats?.easy ?? 0,
+    medium: stats?.medium ?? 0,
+    hard: stats?.hard ?? 0,
+  };
+  if (alreadyCompleted) return projected;
+
+  projected.solved += 1;
+  projected.easy += difficulty === DIFFICULTY.EASY ? 1 : 0;
+  projected.medium += difficulty === DIFFICULTY.MEDIUM ? 1 : 0;
+  projected.hard += difficulty === DIFFICULTY.HARD ? 1 : 0;
+  return projected;
+}
+
+/**
+ * Updates the repo README with the problem's topic tags and the solved-problem stats block.
+ * @param {Array<{name: string}> | undefined} topicTags
+ * @param {string} problemName
+ * @param {string} difficulty - One of DIFFICULTY values
+ * @param {boolean} alreadyCompleted - Whether this problem was already counted in stats
+ */
+async function updateReadmeTopicTagsWithProblem(
+  topicTags,
+  problemName,
+  difficulty,
+  alreadyCompleted
+) {
   if (topicTags == null) {
     console.log(new LeetHubError('TopicTagsNotFound'));
-    return;
+    topicTags = [];
   }
 
   const { leethub_token, leethub_hook, stats } = await api.storage.local.get([
@@ -403,7 +442,10 @@ async function updateReadmeTopicTagsWithProblem(topicTags, problemName) {
   for (let topic of topicTags) {
     readme = appendProblemToReadme(topic.name, readme, leethub_hook, problemName);
   }
-  readme = sortTopicsInReadme(readme);
+  if (topicTags.length > 0) {
+    readme = sortTopicsInReadme(readme);
+  }
+  readme = updateStatsInReadme(readme, projectStats(stats, difficulty, alreadyCompleted));
   readme = encode(readme);
 
   return delay(
@@ -480,7 +522,9 @@ function loader(leetCode) {
       /* Group problem into its relevant topics */
       const updateRepoReadMe = updateReadmeTopicTagsWithProblem(
         leetCode.submissionData?.question?.topicTags,
-        problemName
+        problemName,
+        leetCode.difficulty,
+        alreadyCompleted
       );
 
       const newSHAs = await Promise.all([uploadReadMe, uploadNotes, uploadCode, updateRepoReadMe]);

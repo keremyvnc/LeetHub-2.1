@@ -4,6 +4,65 @@ const leetCodeSectionStart = `<!---LeetCode Topics Start-->`;
 const leetCodeSectionHeader = `# LeetCode Topics`;
 const leetCodeSectionEnd = `<!---LeetCode Topics End-->`;
 
+const statsSectionStart = `<!---LeetCode Stats Start-->`;
+const statsSectionEnd = `<!---LeetCode Stats End-->`;
+
+/**
+ * Builds the markdown block that visualizes the solved-problem stats.
+ * @param {{easy?: number, medium?: number, hard?: number, solved?: number}} stats
+ * @returns {string}
+ */
+function buildStatsSection(stats) {
+  const easy = stats?.easy ?? 0;
+  const medium = stats?.medium ?? 0;
+  const hard = stats?.hard ?? 0;
+  const solved = stats?.solved ?? easy + medium + hard;
+  const badge = (label, value, color) =>
+    `![${label}](https://img.shields.io/badge/${label}-${value}-${color}?style=for-the-badge)`;
+
+  return [
+    statsSectionStart,
+    '# LeetCode Stats',
+    '',
+    [
+      badge('Total', solved, 'blue'),
+      badge('Easy', easy, 'brightgreen'),
+      badge('Medium', medium, 'orange'),
+      badge('Hard', hard, 'red'),
+    ].join(' '),
+    '',
+    '| Difficulty | Solved |',
+    '| ---------- | ------ |',
+    `| 🟢 Easy | ${easy} |`,
+    `| 🟠 Medium | ${medium} |`,
+    `| 🔴 Hard | ${hard} |`,
+    `| **Total** | **${solved}** |`,
+    statsSectionEnd,
+  ].join('\n');
+}
+
+/**
+ * Inserts or replaces the stats section at the very top of the README.
+ * @param {string} markdownFile
+ * @param {{easy?: number, medium?: number, hard?: number, solved?: number}} stats
+ * @returns {string}
+ */
+function updateStatsInReadme(markdownFile, stats) {
+  const section = buildStatsSection(stats);
+  const startIndex = markdownFile.indexOf(statsSectionStart);
+  const endIndex = markdownFile.indexOf(statsSectionEnd);
+
+  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+    return (
+      markdownFile.slice(0, startIndex) +
+      section +
+      markdownFile.slice(endIndex + statsSectionEnd.length)
+    );
+  }
+
+  return section + '\n\n' + markdownFile;
+}
+
 function appendProblemToReadme(topic, markdownFile, hook, problem) {
   const url = `https://github.com/${hook}/tree/master/${problem}`;
   const topicHeader = `## ${topic}`;
@@ -145,4 +204,4 @@ function sortTopicsInReadme(markdownFile) {
   return markdownFile;
 }
 
-export { appendProblemToReadme, sortTopicsInReadme };
+export { appendProblemToReadme, sortTopicsInReadme, updateStatsInReadme };

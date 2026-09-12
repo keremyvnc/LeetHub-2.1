@@ -1,5 +1,4 @@
-
-import { appendProblemToReadme, sortTopicsInReadme } from '../scripts/leetcode/readmeTopics.js';
+import { appendProblemToReadme, sortTopicsInReadme, updateStatsInReadme } from '../scripts/leetcode/readmeTopics.js';
 
 describe('appendProblemToReadme', () => {
   it('should correctly append to previous readme which has start and end tags', () => {
@@ -25,3 +24,31 @@ describe('appendProblemToReadme', () => {
   //   expect(output).toBe(expected)
   // })
 // })
+
+describe('updateStatsInReadme', () => {
+  const stats = { easy: 3, medium: 2, hard: 1, solved: 6 };
+
+  it('should prepend a stats section when none exists', () => {
+    const output = updateStatsInReadme('# My repo\nsome text', stats);
+    expect(output.startsWith('\x3C!---LeetCode Stats Start-->\n# LeetCode Stats')).toBeTrue();
+    expect(output.endsWith('\x3C!---LeetCode Stats End-->\n\n# My repo\nsome text')).toBeTrue();
+    expect(output).toContain('| 🟢 Easy | 3 |');
+    expect(output).toContain('| 🟠 Medium | 2 |');
+    expect(output).toContain('| 🔴 Hard | 1 |');
+    expect(output).toContain('| **Total** | **6** |');
+  });
+
+  it('should replace an existing stats section in place', () => {
+    const first = updateStatsInReadme('# My repo', stats);
+    const second = updateStatsInReadme(first, { easy: 4, medium: 2, hard: 1, solved: 7 });
+    expect(second.match(/LeetCode Stats Start/g).length).toBe(1);
+    expect(second).toContain('| 🟢 Easy | 4 |');
+    expect(second).not.toContain('| 🟢 Easy | 3 |');
+    expect(second.endsWith('\x3C!---LeetCode Stats End-->\n\n# My repo')).toBeTrue();
+  });
+
+  it('should default missing counters to zero', () => {
+    const output = updateStatsInReadme('', {});
+    expect(output).toContain('| **Total** | **0** |');
+  });
+});
